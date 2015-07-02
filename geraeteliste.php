@@ -5,7 +5,7 @@
  * This extension implements a <geraeteliste> tag creating a gallery of all images in
  * a category.
  *
- * by habo
+ * 2015 by habo
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,23 +34,34 @@ $wgExtensionCredits['parserhook'][] = array(
         'name' => 'Geräteliste',
         'author' => 'habo',
         'url' => 'http://wiki.dingfabrik.de/index.php/Extention/Geräteliste',
-        'description' => 'Adds <nowiki><geraeteliste></nowiki> tag',
-        'version' => '1.0.0'
+        'description' => 'Adds <nowiki><geraeteliste/></nowiki> and <nowiki><projektliste/></nowiki> tags',
+        'version' => '1.0.1'
 );
 $wgExtensionFunctions[] = "CategoryGallery::categoryGallerySetHook";
 class CategoryGallery {
         public static function categoryGallerySetHook() {
                 global $wgParser;
-                $wgParser->setHook( "geraeteliste",
-                        "CategoryGallery::renderCategoryGallery" );
+                $wgParser->setHook( "geraeteliste", "CategoryGallery::renderCategoryGallery" );
+                $wgParser->setHook( "projektliste", "CategoryGallery::renderCategoryGallery" );
         }
         public static function renderCategoryGallery( $input, $params, $parser ) {
                 global $wgBedellPenDragonResident;
                 $parser->disableCache();
                 $dbr = wfGetDB( DB_SLAVE );
+                if ( !isset( $params['cat'] ) ) { // No category selected
+			$cat="Gerät";
+	        } else {
+			$cat=$params['cat'];
+	        }
+                if ( !isset( $params['noimg'] ) ) { // noimage attribute missing
+			$noimg="Device-level-yellow.png";
+	        } else {
+			$noimg=$params['noimg'];
+	        }
+
                 $res = $dbr->select( 'categorylinks', 'cl_from',
                         array (
-                               'cl_to' => "Gerät",
+                               'cl_to' => $cat,
 			       'cl_type' => "page",
                         )
                 );
@@ -64,17 +75,18 @@ class CategoryGallery {
                         $page = WikiPage::newFromId( $id );
                         $title = Title::newFromID ( $id );
                         $tkey = $title->getPrefixedDBKey();
+                        $tclean = str_replace("_"," ",$title->getPrefixedDBKey());
 			$content = $page->getText();
-			$isgpage=strstr($content,"{{Gerätekarte");
+			$isgpage=strstr($content,"{{Gerätekarte") || strstr($content,"{{Projektkarte");
 			if (!$isgpage){
 				continue;
 			}
 			preg_match('/Bild.*=(.*)/', $content, $str);
-			$bild = "Device-level-yellow.png";
+			$bild = $noimg;
 			if ( !empty(trim($str[1]))) {
                         	$bild = $str[1];
 			}
-                        $text .= $bild . "|[[".$tkey."]]|link=".$tkey;
+                        $text .= $bild . "|[[".$tkey."|".$tclean."]]|link=".$tkey;
                         $text .= "\n";
 		}
                 $output = $parser->renderImageGallery( $text, $params );
