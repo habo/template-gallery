@@ -5,7 +5,7 @@
  * This extension implements a <geraeteliste> tag creating a gallery of all images in
  * a category.
  *
- * 2015 by habo
+ * by habo
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ $wgExtensionCredits['parserhook'][] = array(
         'name' => 'Geräteliste',
         'author' => 'habo',
         'url' => 'http://wiki.dingfabrik.de/index.php/Extention/Geräteliste',
-        'description' => 'Adds <nowiki><geraeteliste/></nowiki> and <nowiki><projektliste/></nowiki> tags',
-        'version' => '1.0.1'
+        'description' => 'Adds <nowiki><geraeteliste></nowiki> tag',
+        'version' => '1.1.0'
 );
 $wgExtensionFunctions[] = "CategoryGallery::categoryGallerySetHook";
 class CategoryGallery {
@@ -48,6 +48,10 @@ class CategoryGallery {
                 global $wgBedellPenDragonResident;
                 $parser->disableCache();
                 $dbr = wfGetDB( DB_SLAVE );
+		$showstat=false;
+                if ( isset( $params['stat'] ) ) { // show statistics
+			$showstat=true;
+		}
                 if ( !isset( $params['cat'] ) ) { // No category selected
 			$cat="Gerät";
 	        } else {
@@ -70,6 +74,8 @@ class CategoryGallery {
                         $ids[] = $row->cl_from;
                 }
                 $text = '';
+		$count_total=0;
+		$count_bild=0;
 
                 foreach ( $ids as $id ) {
                         $page = WikiPage::newFromId( $id );
@@ -85,11 +91,17 @@ class CategoryGallery {
 			$bild = $noimg;
 			if ( !empty(trim($str[1]))) {
                         	$bild = $str[1];
+				$count_bild++;
 			}
+			$count_total++;
                         $text .= $bild . "|[[".$tkey."|".$tclean."]]|link=".$tkey;
                         $text .= "\n";
 		}
                 $output = $parser->renderImageGallery( $text, $params );
+		if($showstat){
+			$output.= "<div>Geräte: ".$count_total;
+			$output.= ", mit Bild: ".$count_bild."</div>";
+		}
                 return $output;
         }
 }
