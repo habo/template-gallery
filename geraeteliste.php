@@ -35,7 +35,7 @@ $wgExtensionCredits['parserhook'][] = array(
         'author' => 'habo',
         'url' => 'http://wiki.dingfabrik.de/index.php/Extention/Geräteliste',
         'description' => 'Adds <nowiki><geraeteliste></nowiki> tag',
-        'version' => '1.1.0'
+        'version' => '1.1.1'
 );
 $wgExtensionFunctions[] = "CategoryGallery::categoryGallerySetHook";
 class CategoryGallery {
@@ -62,6 +62,12 @@ class CategoryGallery {
 	        } else {
 			$noimg=$params['noimg'];
 	        }
+		$hasfilter=false;
+		if (isset($params['filterparameter']) && isset($params['filtervalue'])) {
+			$filtername=trim($params['filterparameter']);
+			$filtervalue=trim($params['filtervalue']);
+			$hasfilter=true;
+		}
 
                 $res = $dbr->select( 'categorylinks', 'cl_from',
                         array (
@@ -86,6 +92,13 @@ class CategoryGallery {
 			$isgpage=strstr($content,"{{Gerätekarte") || strstr($content,"{{Projektkarte");
 			if (!$isgpage){
 				continue;
+			}
+			if ($hasfilter){
+				preg_match('/'.$filtername.'.*=(.*)/i', $content, $parametercontent);
+				if (strcmp($filtervalue,trim($parametercontent[1]))!=0){
+					continue;
+				}
+
 			}
 			preg_match('/Bild.*=(.*)/', $content, $str);
 			$bild = $noimg;
