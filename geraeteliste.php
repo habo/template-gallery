@@ -62,7 +62,7 @@ class CategoryGallery {
 	        } else {
 			$noimg=$params['noimg'];
 	        }
-		$hasfilter=false;
+		$hasfilter=false; // if filter set, only allow matching cards
 		if (isset($params['filterparameter']) && isset($params['filtervalue'])) {
 			$filtername=trim($params['filterparameter']);
 			$filtervalue=trim($params['filtervalue']);
