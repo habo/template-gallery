@@ -35,7 +35,7 @@ $wgExtensionCredits['parserhook'][] = array(
         'author' => 'habo',
         'url' => 'http://wiki.dingfabrik.de/index.php/Extention/Geräteliste',
         'description' => 'Adds <nowiki><geraeteliste></nowiki> tag',
-        'version' => '1.1.1'
+        'version' => '1.2'
 );
 $wgExtensionFunctions[] = "CategoryGallery::categoryGallerySetHook";
 class CategoryGallery {
@@ -48,6 +48,10 @@ class CategoryGallery {
                 global $wgBedellPenDragonResident;
                 $parser->disableCache();
                 $dbr = wfGetDB( DB_SLAVE );
+		$format="html";
+                if ( isset( $params['format'] ) ) { // set output format
+			$format = trim($params['format']);
+		}
 		$showstat=false;
                 if ( isset( $params['stat'] ) ) { // show statistics
 			$showstat=true;
@@ -82,6 +86,8 @@ class CategoryGallery {
                 $text = '';
 		$count_total=0;
 		$count_bild=0;
+		$csvtext="id\tURL\tpagename\ttitle\timage\twarnlevel\tcontact\n";
+		$htmllist="";
 
                 foreach ( $ids as $id ) {
                         $page = WikiPage::newFromId( $id );
@@ -90,7 +96,7 @@ class CategoryGallery {
                         $tclean = str_replace("_"," ",$title->getPrefixedDBKey());
 			$content = $page->getText();
 			$isgpage=strstr($content,"{{Gerätekarte") || strstr($content,"{{Projektkarte");
-			if (!$isgpage){
+			if (!$isgpage || strpos("x".$tkey,"Vorlage:",1)==1){
 				continue;
 			}
 			if ($hasfilter){
@@ -100,20 +106,48 @@ class CategoryGallery {
 				}
 
 			}
-			preg_match('/Bild.*=(.*)/', $content, $str);
+			preg_match('/Bild.*=(.*)/i', $content, $str);
 			$bild = $noimg;
 			if ( !empty(trim($str[1]))) {
                         	$bild = $str[1];
 				$count_bild++;
 			}
+			if ($format=="htmllist"){
+				$htmllist.="* [[".$tkey."]]\n";
+			}
+			if ($format=="csv"){
+				$name="";
+				$warnstufe="";
+				$ansprechpartner="";
+				$arbeitssicherheit="";
+				preg_match('/name.*=(.*)/i', $content, $name);
+				preg_match('/warnstufe.*=(.*)/i', $content, $warnstufe);
+				preg_match('/ansprechpartner.*=(.*)/i', $content, $ansprechpartner);
+				preg_match('/arbeitssicherheit.*=(.*)/i', $content, $arbeitssicherheit);
+				$csvtext.=$id."\t";
+				$csvtext.="http://wiki.dingfabrik.de/?curid=".$id."\t";
+				$csvtext.=trim($name[1])."\t";
+				$csvtext.=trim($tkey)."\t";
+				$csvtext.=trim($bild)."\t";
+				$csvtext.=trim($warnstufe[1])."\t";
+				$csvtext.=trim($ansprechpartner[1])."\t";
+				$csvtext.=trim($arbeitssicherheit[1])."\t";
+				$csvtext.="\n";
+			}
 			$count_total++;
                         $text .= $bild . "|[[".$tkey."|".$tclean."]]|link=".$tkey;
                         $text .= "\n";
-		}
-                $output = $parser->renderImageGallery( $text, $params );
-		if($showstat){
-			$output.= "<div>Geräte: ".$count_total;
-			$output.= ", mit Bild: ".$count_bild."</div>";
+		} 
+		if ($format=="htmllist"){
+			$output = $parser->recursiveTagParse($htmllist);
+		} elseif ($format=="csv"){
+			$output = "<pre>\n".$csvtext."\n</pre>";
+		} else {
+                	$output = $parser->renderImageGallery( $text, $params );
+			if($showstat){
+				$output.= "<div>Geräte: ".$count_total;
+				$output.= ", mit Bild: ".$count_bild."</div>";
+			}
 		}
                 return $output;
         }
