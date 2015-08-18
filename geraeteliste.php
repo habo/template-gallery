@@ -35,7 +35,7 @@ $wgExtensionCredits['parserhook'][] = array(
         'author' => 'habo',
         'url' => 'http://wiki.dingfabrik.de/index.php/Extention/Geräteliste',
         'description' => 'Adds <nowiki><geraeteliste></nowiki> tag',
-        'version' => '1.2'
+        'version' => '1.4'
 );
 $wgExtensionFunctions[] = "CategoryGallery::categoryGallerySetHook";
 class CategoryGallery {
@@ -43,7 +43,18 @@ class CategoryGallery {
                 global $wgParser;
                 $wgParser->setHook( "geraeteliste", "CategoryGallery::renderCategoryGallery" );
                 $wgParser->setHook( "projektliste", "CategoryGallery::renderCategoryGallery" );
+                $wgParser->setHook( "geraetesuche", "CategoryGallery::renderGeraeteSuche" );
         }
+        public static function renderGeraeteSuche( $input, $params, $parser ) {
+                global $wgBedellPenDragonResident;
+
+                $output= "<form action='/index.php'>";
+		$output.="<input name='curid' type='text'>";
+		$output.="<input type='submit' value='suchen'>";
+		$output.="</form>";
+		
+		return $output;
+	}
         public static function renderCategoryGallery( $input, $params, $parser ) {
                 global $wgBedellPenDragonResident;
                 $parser->disableCache();
